@@ -1,182 +1,428 @@
-# Kubernetes Deployment Guide
+# Kubernetes (k3s) Deployment Guide
 
-This guide walks through deploying the Codebase Architect Agent to a Kubernetes cluster.
+Complete guide for deploying Codebase Architect Agent to k3s on WSL2 or any Kubernetes cluster.
 
-## Prerequisites
+## Quick Start (5 minutes)
 
-- Kubernetes cluster 1.20+ (AKS, GKE, EKS, or local minikube)
-- `kubectl` configured to access your cluster
-- Docker images pushed to a container registry (Azure Container Registry, Docker Hub, etc.)
-- Azure OpenAI credentials
+### Prerequisites
+
+- **k3s installed**: On WSL2 with Docker Desktop
+- **kubectl configured**: `kubectl get nodes` should work
+- **Azure OpenAI credentials**: API key and deployment name
+
+### Install k3s (WSL2)
+
+```bash
+# On WSL2, install k3s
+curl -sfL https://get.k3s.io | sh -
+
+# Verify installation
+kubectl get nodes
+kubectl cluster-info
+```
+
+### Deploy Everything at Once
+
+```bash
+# 1. Clone and navigate to k8s folder
+cd k8s
+
+# 2. Edit secret.yaml with your Azure OpenAI credentials
+nano secret.yaml
+
+# 3. Deploy all resources
+kubectl apply -k .
+
+# 4. Check deployment status
+kubectl get pods -n codebase-architect
+
+# 5. Access the application (see Access Applications section)
+```
 
 ## Directory Structure
 
 ```
 k8s/
 ├── namespace.yaml              # Kubernetes namespace
-├── configmap.yaml              # Configuration
-├── secret.yaml                 # Sensitive data (API keys)
-├── pvc.yaml                    # Persistent volume claim
-├── backend-deployment.yaml     # Backend deployment
-├── frontend-deployment.yaml    # Frontend deployment
-├── backend-service.yaml        # Backend service
-├── frontend-service.yaml       # Frontend service
-├── ingress.yaml               # Ingress routing
-├── rbac.yaml                  # Role-based access control
-├── hpa.yaml                   # Horizontal pod autoscaling
+├── configmap.yaml              # Application configuration
+├── secret.yaml                 # Azure OpenAI credentials (edit before deploying)
+├── pvc.yaml                    # Persistent volume claim for caching
+├── backend-deployment.yaml     # Backend FastAPI deployment
+├── frontend-deployment.yaml    # Frontend React deployment
+├── backend-service.yaml        # Backend service (port 8000)
+├── frontend-service.yaml       # Frontend service (port 5173)
+├── ingress.yaml               # Ingress routing (optional)
+├── rbac.yaml                  # Service accounts & RBAC
+├── hpa.yaml                   # Horizontal Pod Autoscaler
+├── kustomization.yaml         # Kustomize configuration (deploy all resources)
 └── README.md                  # This file
 ```
 
-## Step 1: Build and Push Docker Images
+## Step-by-Step Deployment
 
-### Build Backend Image
+### 1. Configure Secrets
+
+**Edit `secret.yaml` with your Azure OpenAI credentials:**
+
 ```bash
-docker build -f Dockerfile.backend -t your-registry.azurecr.io/codebase-architect-backend:latest .
-docker push your-registry.azurecr.io/codebase-architect-backend:latest
+nano secret.yaml
+# Or use your favorite editor
 ```
 
-### Build Frontend Image
-```bash
-docker build -f frontend/Dockerfile -t your-registry.azurecr.io/codebase-architect-frontend:latest .
-docker push your-registry.azurecr.io/codebase-architect-frontend:latest
-```
-
-## Step 2: Update Kubernetes Manifests
-
-### Update image references
-Edit the deployment files to use your registry:
-
-**backend-deployment.yaml:**
+Update these values:
 ```yaml
-image: your-registry.azurecr.io/codebase-architect-backend:latest
+apiVersion: v1
+kind: Secret
+metadata:
+  name: codebase-architect-secrets
+  namespace: codebase-architect
+type: Opaque
+stringData:
+  AZURE_OPENAI_ENDPOINT: "https://your-resource.openai.azure.com/"
+  AZURE_OPENAI_API_KEY: "your-api-key"
+  AZURE_OPENAI_MODEL_DEPLOYMENT: "your-model-deployment"
+  AZURE_OPENAI_API_VERSION: "2024-02-15-preview"
 ```
 
-**frontend-deployment.yaml:**
-```yaml
-image: your-registry.azurecr.io/codebase-architect-frontend:latest
-```
+### 2. Deploy Using Kustomize (Recommended)
 
-### Update domain names
-Edit `ingress.yaml` with your domain:
-```yaml
-- host: codebase-architect.example.com
-- host: api.codebase-architect.example.com
-```
-
-### Configure secrets
-Edit `secret.yaml` with your Azure OpenAI credentials:
-```yaml
-AZURE_OPENAI_ENDPOINT: "https://your-resource.openai.azure.com/"
-AZURE_OPENAI_API_KEY: "your-api-key-here"
-```
-
-## Step 3: Deploy to Kubernetes
-
-### Create namespace
 ```bash
-kubectl apply -f k8s/namespace.yaml
-```
+# Deploy all resources in correct order
+kubectl apply -k .
 
-### Create ConfigMap and Secrets
-```bash
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/secret.yaml
-```
-
-### Create storage
-```bash
-kubectl apply -f k8s/pvc.yaml
-```
-
-### Create RBAC resources
-```bash
-kubectl apply -f k8s/rbac.yaml
-```
-
-### Deploy applications
-```bash
-kubectl apply -f k8s/backend-deployment.yaml
-kubectl apply -f k8s/frontend-deployment.yaml
-```
-
-### Create services
-```bash
-kubectl apply -f k8s/backend-service.yaml
-kubectl apply -f k8s/frontend-service.yaml
-```
-
-### Create ingress
-```bash
-kubectl apply -f k8s/ingress.yaml
-```
-
-### Set up autoscaling
-```bash
-kubectl apply -f k8s/hpa.yaml
-```
-
-### Deploy all at once
-```bash
-kubectl apply -f k8s/
-```
-
-## Step 4: Verify Deployment
-
-### Check pod status
-```bash
+# Verify deployment
 kubectl get pods -n codebase-architect
-kubectl describe pod <pod-name> -n codebase-architect
+kubectl get svc -n codebase-architect
 ```
 
-### Check services
+### 3. Deploy Manually (Alternative)
+
+If you prefer manual deployment:
+
+```bash
+# Create namespace first
+kubectl apply -f namespace.yaml
+
+# Create ConfigMap and Secrets
+kubectl apply -f configmap.yaml
+kubectl apply -f secret.yaml
+
+# Create RBAC
+kubectl apply -f rbac.yaml
+
+# Create storage
+kubectl apply -f pvc.yaml
+
+# Deploy applications
+kubectl apply -f backend-deployment.yaml
+kubectl apply -f backend-service.yaml
+kubectl apply -f frontend-deployment.yaml
+kubectl apply -f frontend-service.yaml
+
+# Optional: Set up ingress and autoscaling
+kubectl apply -f ingress.yaml
+kubectl apply -f hpa.yaml
+```
+
+## Verify Deployment
+
+### Check Pod Status
+
+```bash
+# View all pods
+kubectl get pods -n codebase-architect
+
+# Describe a pod (shows events and status)
+kubectl describe pod <pod-name> -n codebase-architect
+
+# Check pod logs
+kubectl logs -f deployment/codebase-architect-backend -n codebase-architect
+kubectl logs -f deployment/codebase-architect-frontend -n codebase-architect
+```
+
+### Check Services
+
 ```bash
 kubectl get svc -n codebase-architect
 ```
 
-### Check ingress
+### Check Ingress Status
+
 ```bash
 kubectl get ingress -n codebase-architect
 ```
 
-### View logs
+## Access the Application
+
+### Option A: Port Forwarding (Development/Testing)
+
+**Terminal 1 - Backend:**
+```bash
+kubectl port-forward -n codebase-architect svc/backend-service 8000:8000
+
+# Test:
+curl http://localhost:8000/health
+```
+
+**Terminal 2 - Frontend:**
+```bash
+kubectl port-forward -n codebase-architect svc/frontend-service 5173:5173
+
+# Open: http://localhost:5173
+```
+
+### Option B: NodePort Service (Quick Testing)
+
+Edit `backend-service.yaml` and change:
+```yaml
+type: ClusterIP
+```
+to:
+```yaml
+type: NodePort
+```
+
+Then:
+```bash
+kubectl apply -f backend-service.yaml
+
+# Get NodePort
+kubectl get svc -n codebase-architect
+
+# Access via: http://k3s-node-ip:node-port
+```
+
+### Option C: Ingress (Production)
+
+```bash
+# Apply ingress
+kubectl apply -f ingress.yaml
+
+# Edit /etc/hosts (on WSL2):
+# 127.0.0.1 codebase-architect.local
+
+# Access: http://codebase-architect.local
+```
+
+## Monitoring & Troubleshooting
+
+### View Pod Logs
+
 ```bash
 # Backend logs
 kubectl logs -f deployment/codebase-architect-backend -n codebase-architect
 
-# Frontend logs
+# Frontend logs  
 kubectl logs -f deployment/codebase-architect-frontend -n codebase-architect
+
+# Specific pod
+kubectl logs <pod-name> -n codebase-architect
+
+# With timestamps
+kubectl logs -f <pod-name> -n codebase-architect --timestamps=true
 ```
 
-### Port forward for testing
+### Debug Inside a Pod
+
 ```bash
-# Backend
-kubectl port-forward svc/codebase-architect-backend 8000:8000 -n codebase-architect
+# Execute command in pod
+kubectl exec -it <pod-name> -n codebase-architect -- /bin/bash
 
-# Frontend
-kubectl port-forward svc/codebase-architect-frontend 3000:3000 -n codebase-architect
+# Test backend from frontend pod
+kubectl exec -it <frontend-pod> -n codebase-architect -- curl http://backend-service:8000/health
 
-# Access at http://localhost:3000
+# Check environment variables
+kubectl exec <pod-name> -n codebase-architect -- env | grep AZURE
 ```
 
-## Step 5: Set Up Ingress Controller
+### Check Events
 
-### For NGINX Ingress Controller
 ```bash
+# All events in namespace
+kubectl get events -n codebase-architect --sort-by='.lastTimestamp'
+
+# Describe specific resource
+kubectl describe pod <pod-name> -n codebase-architect
+```
+
+### Common Issues & Solutions
+
+**Pods stuck in CrashLoopBackOff:**
+```bash
+# 1. Check logs
+kubectl logs <pod-name> -n codebase-architect
+
+# 2. Common causes:
+# - Missing/incorrect secrets
+# - Wrong Azure OpenAI credentials
+# - PVC not bound
+# - Insufficient resources
+
+# 3. Solution:
+kubectl describe pod <pod-name> -n codebase-architect
+```
+
+**ImagePullBackOff:**
+```bash
+# Check image in deployment manifest
+kubectl get deployment codebase-architect-backend -n codebase-architect -o yaml | grep image
+
+# k3s uses containerd - ensure image is available
+crictl image ls
+```
+
+**Secrets not loading:**
+```bash
+# Verify secret exists
+kubectl get secret -n codebase-architect
+
+# Check secret content (decode)
+kubectl get secret codebase-architect-secrets -n codebase-architect -o jsonpath='{.data.AZURE_OPENAI_API_KEY}' | base64 -d
+```
+
+**PVC not binding:**
+```bash
+# Check PVC status
+kubectl get pvc -n codebase-architect
+kubectl describe pvc codebase-architect-pvc -n codebase-architect
+
+# k3s uses local storage by default
+kubectl get storageclass
+```
+
+**Ingress not working:**
+```bash
+# Check ingress controller
+kubectl get pods -n kube-system | grep ingress
+
+# If using k3s with built-in traefik:
+kubectl get pods -n kube-system | grep traefik
+
+# Check ingress status
+kubectl describe ingress codebase-architect-ingress -n codebase-architect
+```
+
+## Scaling & Performance
+
+### Horizontal Pod Autoscaling (HPA)
+
+```bash
+# HPA configuration in hpa.yaml:
+# - Min replicas: 1
+# - Max replicas: 5
+# - CPU target: 80%
+# - Memory target: 80%
+
+# Watch autoscaling in action
+kubectl get hpa -n codebase-architect -w
+
+# Check HPA details
+kubectl describe hpa codebase-architect-backend -n codebase-architect
+
+# Manual scaling (overrides HPA)
+kubectl scale deployment codebase-architect-backend --replicas=3 -n codebase-architect
+```
+
+### Resource Monitoring
+
+```bash
+# View resource usage
+kubectl top nodes
+kubectl top pods -n codebase-architect
+```
+
+## Updates & Rollouts
+
+### Update Image
+
+```bash
+# Update backend image to new version
+kubectl set image deployment/codebase-architect-backend \
+  backend=localhost:5000/codebase-architect-backend:v1.1.0 \
+  -n codebase-architect
+```
+
+### Monitor Rollout
+
+```bash
+# Watch rollout status
+kubectl rollout status deployment/codebase-architect-backend -n codebase-architect
+
+# View rollout history
+kubectl rollout history deployment/codebase-architect-backend -n codebase-architect
+
+# Rollback if needed
+kubectl rollout undo deployment/codebase-architect-backend -n codebase-architect
+```
+
+## Backup & Recovery
+
+### Backup All Resources
+
+```bash
+# Export entire namespace
+kubectl get all -n codebase-architect -o yaml > backup.yaml
+
+# Export with CRDs
+kubectl get all,cm,secret -n codebase-architect -o yaml > backup.yaml
+```
+
+### Restore from Backup
+
+```bash
+# Restore all resources
+kubectl apply -f backup.yaml
+```
+
+### Backup Persistent Data
+
+```bash
+# Backup PVC data
+kubectl exec <backend-pod> -n codebase-architect -- tar czf - /app/cache > cache-backup.tar.gz
+```
+
+## Cleanup
+
+### Delete Application
+
+```bash
+# Delete specific resources
+kubectl delete deployment -n codebase-architect --all
+
+# Delete entire namespace (warning: deletes everything)
+kubectl delete namespace codebase-architect
+```
+
+## Step 5: Optional - Set Up Ingress Controller
+
+### For k3s (Built-in Traefik)
+
+k3s comes with Traefik ingress controller by default:
+
+```bash
+# Check traefik is running
+kubectl get pods -n kube-system | grep traefik
+
+# Traefik dashboard (optional)
+kubectl port-forward -n kube-system svc/traefik 8080:8080
+
+# Access: http://localhost:8080/dashboard
+```
+
+### For NGINX Ingress Controller (Alternative)
+
+```bash
+# Add Helm repo
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+helm repo update
+
+# Install nginx-ingress
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace
 ```
 
-### For Azure Application Gateway Ingress Controller (AKS)
-```bash
-helm repo add application-gateway-kubernetes-ingress https://appgwingress.blob.core.windows.net/ingress-azure-helm-package/
-helm install ingress-appgw application-gateway-kubernetes-ingress/ingress-azure \
-  -n kube-system \
-  --set appgw.subscriptionId=<subscription-id> \
-  --set appgw.resourceGroup=<resource-group> \
-  --set appgw.name=<appgw-name>
-```
-
-## Step 6: Set Up TLS Certificates (Optional but Recommended)
+## Step 6: Optional - Set Up TLS (Let's Encrypt)
 
 ### Install cert-manager
 ```bash
@@ -221,166 +467,212 @@ codebase-architect.example.com    → <INGRESS-IP>
 api.codebase-architect.example.com → <INGRESS-IP>
 ```
 
-## Scaling Configuration
+### Install cert-manager
 
-### Horizontal Pod Autoscaling (HPA)
-The `hpa.yaml` automatically scales pods based on:
-- **CPU**: Scales up at 70% utilization, down at lower
-- **Memory**: Scales up at 80% utilization, down at lower
-- **Min replicas**: 2
-- **Max replicas**: 5
-
-Monitor HPA status:
 ```bash
-kubectl get hpa -n codebase-architect
-kubectl describe hpa codebase-architect-backend-hpa -n codebase-architect
+# Add Helm repo
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+# Install cert-manager
+helm install cert-manager jetstack/cert-manager \
+  -n cert-manager --create-namespace \
+  --set installCRDs=true
 ```
 
-### Manual scaling
-```bash
-kubectl scale deployment codebase-architect-backend --replicas=3 -n codebase-architect
+### Create ClusterIssuer for Let's Encrypt
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@example.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: traefik  # or 'nginx' if using nginx controller
 ```
 
-## Monitoring and Logging
-
-### View resource usage
 ```bash
-kubectl top nodes
-kubectl top pods -n codebase-architect
+kubectl apply -f cert-issuer.yaml
 ```
 
-### Stream logs
-```bash
-# All pods
-kubectl logs -f -l app=codebase-architect -n codebase-architect
+### Update Ingress to Use TLS
 
-# Specific component
-kubectl logs -f deployment/codebase-architect-backend -n codebase-architect
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codebase-architect-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - codebase-architect.local
+    secretName: codebase-architect-tls
+  rules:
+  - host: codebase-architect.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 5173
 ```
 
-### Health checks
-```bash
-# Check backend health
-kubectl exec -it <backend-pod> -n codebase-architect -- curl localhost:8000/health
+## Step 7: Configure DNS (Optional)
 
-# Check liveness
-kubectl describe pod <pod-name> -n codebase-architect | grep -A 5 Liveness
+For local development:
+
+```bash
+# Edit /etc/hosts on Windows WSL2:
+127.0.0.1 codebase-architect.local
 ```
 
-## Updates and Rollouts
+For production:
 
-### Update image
 ```bash
-kubectl set image deployment/codebase-architect-backend \
-  backend=your-registry.azurecr.io/codebase-architect-backend:v1.1.0 \
-  -n codebase-architect
+# Get ingress IP
+kubectl get ingress -n codebase-architect
+
+# Add DNS records via your DNS provider:
+codebase-architect.example.com → <INGRESS-IP>
 ```
 
-### Monitor rollout
-```bash
-kubectl rollout status deployment/codebase-architect-backend -n codebase-architect
-kubectl rollout history deployment/codebase-architect-backend -n codebase-architect
-```
+## Configuration Files Overview
 
-### Rollback if needed
-```bash
-kubectl rollout undo deployment/codebase-architect-backend -n codebase-architect
-```
+### backend-deployment.yaml
 
-## Backup and Recovery
+Key settings:
+- **Replicas**: 2 (autoscales 1-5 with HPA)
+- **Resource requests**: 250m CPU, 512Mi memory
+- **Resource limits**: 1000m CPU, 2Gi memory
+- **Health checks**: Liveness and readiness probes
+- **Storage**: Mounts PVC at /app/cache for caching
 
-### Backup Kubernetes resources
-```bash
-kubectl get all -n codebase-architect -o yaml > backup.yaml
-```
+### frontend-deployment.yaml
 
-### Backup persistent data
-```bash
-kubectl exec <backend-pod> -n codebase-architect -- tar czf - /app/cache > cache-backup.tar.gz
-```
+Key settings:
+- **Replicas**: 2 (autoscales 1-5 with HPA)
+- **Resource requests**: 100m CPU, 256Mi memory
+- **Resource limits**: 500m CPU, 1Gi memory
+- **Environment**: VITE_API_URL points to backend service
 
-### Restore from backup
-```bash
-kubectl apply -f backup.yaml
-```
+### configmap.yaml
 
-## Troubleshooting
+Non-sensitive configuration:
+- `DEBUG`: Enable/disable debug mode
+- `LOG_LEVEL`: Logging level
+- `MAX_FILE_SIZE_MB`: Max file size for analysis
+- `ANALYSIS_TIMEOUT`: Max analysis duration
 
-### Pods not starting
-```bash
-kubectl describe pod <pod-name> -n codebase-architect
-kubectl logs <pod-name> -n codebase-architect
-```
+### secret.yaml
 
-### ImagePullBackOff
-- Verify image exists in registry
-- Check registry credentials/access
-
-### CrashLoopBackOff
-- Check logs for application errors
-- Verify environment variables in ConfigMap/Secret
-
-### Services not accessible
-- Check Ingress configuration
-- Verify DNS resolution
-- Check firewall rules
-
-### Storage issues
-```bash
-kubectl get pvc -n codebase-architect
-kubectl describe pvc codebase-architect-pvc -n codebase-architect
-```
+**Important**: Edit before deploying!
+- `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint
+- `AZURE_OPENAI_API_KEY`: Your API key
+- `AZURE_OPENAI_MODEL_DEPLOYMENT`: Your model deployment
+- `AZURE_OPENAI_API_VERSION`: API version
 
 ## Production Checklist
 
-- [ ] Images pushed to private registry
-- [ ] Secrets using Azure Key Vault or sealed-secrets
-- [ ] Network policies configured
-- [ ] Resource quotas set
-- [ ] Pod disruption budgets configured
-- [ ] Monitoring and alerting enabled
-- [ ] Backup strategy in place
-- [ ] TLS certificates configured
-- [ ] Load testing completed
-- [ ] Disaster recovery plan documented
+- [ ] Edit secret.yaml with real Azure credentials
+- [ ] Use secret management (sealed-secrets, Azure Key Vault)
+- [ ] Enable Network Policies for security
+- [ ] Set resource quotas per namespace
+- [ ] Configure Pod Disruption Budgets
+- [ ] Enable monitoring (Prometheus/Grafana)
+- [ ] Set up backup strategy
+- [ ] Configure TLS with Let's Encrypt
+- [ ] Load test the deployment
+- [ ] Document disaster recovery procedures
+- [ ] Implement RBAC policies
+- [ ] Regular security updates for k3s
 
-## Useful Commands
+## Useful kubectl Commands
 
 ```bash
-# Get cluster info
+# Cluster information
 kubectl cluster-info
-
-# Get nodes
 kubectl get nodes
+kubectl describe node <node-name>
 
-# Get all resources in namespace
+# Namespace management
+kubectl get ns
+kubectl create namespace <name>
+kubectl delete namespace <name>
+
+# Deployments
+kubectl get deployments -n codebase-architect
+kubectl describe deployment <deployment-name> -n codebase-architect
+kubectl rollout status deployment/<deployment-name> -n codebase-architect
+kubectl scale deployment/<deployment-name> --replicas=3 -n codebase-architect
+
+# Pods
+kubectl get pods -n codebase-architect
+kubectl describe pod <pod-name> -n codebase-architect
+kubectl logs <pod-name> -n codebase-architect
+kubectl logs -f <pod-name> -n codebase-architect  # Follow logs
+
+# Services
+kubectl get svc -n codebase-architect
+kubectl describe svc <service-name> -n codebase-architect
+kubectl port-forward svc/<service-name> 8000:8000 -n codebase-architect
+
+# Resources
 kubectl get all -n codebase-architect
+kubectl get pvc -n codebase-architect
+kubectl get configmap -n codebase-architect
+kubectl get secret -n codebase-architect
 
-# Get detailed pod info
-kubectl get pod <pod-name> -n codebase-architect -o yaml
-
-# Execute command in pod
+# Debugging
 kubectl exec -it <pod-name> -n codebase-architect -- /bin/bash
+kubectl cp <pod-name>:/path/to/file ./local-file -n codebase-architect
+kubectl describe events -n codebase-architect
 
-# Port forward
-kubectl port-forward pod/<pod-name> 8000:8000 -n codebase-architect
-
-# Delete all resources
-kubectl delete namespace codebase-architect
+# Cleanup
+kubectl delete pod <pod-name> -n codebase-architect
+kubectl delete deployment <deployment-name> -n codebase-architect
+kubectl delete namespace codebase-architect  # Delete everything!
 ```
+
+## Scaling Configuration
 
 ## Additional Resources
 
 - [Kubernetes Official Documentation](https://kubernetes.io/docs/)
+- [k3s Documentation](https://docs.k3s.io/)
 - [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
+- [Helm Documentation](https://helm.sh/docs/)
+- [Kustomize Documentation](https://kustomize.io/)
 - [Azure Kubernetes Service (AKS)](https://docs.microsoft.com/en-us/azure/aks/)
-- [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/docs)
-- [AWS EKS](https://docs.aws.amazon.com/eks/)
 
-## Support
+## Support & Troubleshooting
 
-For issues or questions:
-1. Check pod logs: `kubectl logs <pod-name> -n codebase-architect`
-2. Check events: `kubectl describe pod <pod-name> -n codebase-architect`
-3. Review Kubernetes status: `kubectl get events -n codebase-architect`
-4. Consult troubleshooting section above
+For detailed troubleshooting, see [ERROR_HANDLING.md](../ERROR_HANDLING.md)
+
+**Quick troubleshooting steps:**
+1. Check pod logs: `kubectl logs -f <pod-name> -n codebase-architect`
+2. Describe pod for events: `kubectl describe pod <pod-name> -n codebase-architect`
+3. Check namespace events: `kubectl get events -n codebase-architect --sort-by='.lastTimestamp'`
+4. Test connectivity: `kubectl exec -it <pod> -n codebase-architect -- curl http://backend-service:8000/health`
+
+**Common issues:**
+- **CrashLoopBackOff**: Check logs and secret configuration
+- **ImagePullBackOff**: Verify image in deployment manifest
+- **Pending pods**: Check resources: `kubectl describe node`
+- **Connection refused**: Check services: `kubectl get svc -n codebase-architect`
+
+---
+
+**Happy deploying! 🚀**

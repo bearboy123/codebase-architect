@@ -76,32 +76,84 @@ curl http://localhost:8000/api/analysis/{job_id}/status
 curl http://localhost:8000/api/analysis/{job_id}
 ```
 
-## Docker/Kubernetes Deployment
+## Kubernetes (k3s) Deployment
 
-### Using Kubernetes
+### Prerequisites
+- k3s installed on WSL2 with Docker Desktop
+- `kubectl` configured and pointing to your k3s cluster
+
+### Setup Steps
 
 ```bash
-# Deploy backend
+# 1. Create namespace
+kubectl apply -f k8s/namespace.yaml
+
+# 2. Create ConfigMap for application config
+kubectl apply -f k8s/configmap.yaml
+
+# 3. Create Secret for Azure OpenAI credentials
+# First, edit k8s/secret.yaml with your credentials
+kubectl apply -f k8s/secret.yaml
+
+# 4. Create PVC for persistent storage (optional)
+kubectl apply -f k8s/pvc.yaml
+
+# 5. Deploy backend
 kubectl apply -f k8s/backend-deployment.yaml
 kubectl apply -f k8s/backend-service.yaml
 
-# Deploy frontend
+# 6. Deploy frontend
 kubectl apply -f k8s/frontend-deployment.yaml
 kubectl apply -f k8s/frontend-service.yaml
 
-# Check status
-kubectl get pods
-kubectl logs -f deployment/codebase-architect-backend
+# Or deploy everything at once with Kustomize (recommended):
+kubectl apply -k k8s/
 ```
 
-### Port Forwarding
+### Verify Deployment
 
 ```bash
-# Backend
-kubectl port-forward svc/backend-service 8000:8000
+# Check pods are running
+kubectl get pods -n codebase-architect
 
-# Frontend
-kubectl port-forward svc/frontend-service 5173:5173
+# View logs
+kubectl logs -f deployment/codebase-architect-backend -n codebase-architect
+kubectl logs -f deployment/codebase-architect-frontend -n codebase-architect
+
+# Check services
+kubectl get svc -n codebase-architect
+```
+
+### Access the Application
+
+```bash
+# Option 1: Port Forwarding
+kubectl port-forward svc/backend-service 8000:8000 -n codebase-architect &
+kubectl port-forward svc/frontend-service 5173:5173 -n codebase-architect &
+
+# Open http://localhost:5173
+
+# Option 2: Using Ingress (if configured)
+# Check k8s/ingress.yaml for hostname configuration
+# Add to /etc/hosts: codebase-architect.local
+# Then open http://codebase-architect.local
+```
+
+### Autoscaling (HPA)
+
+```bash
+# Deploy Horizontal Pod Autoscaler
+kubectl apply -f k8s/hpa.yaml
+
+# Monitor scaling
+kubectl get hpa -n codebase-architect -w
+```
+
+### Cleanup
+
+```bash
+# Remove all resources
+kubectl delete namespace codebase-architect
 ```
 
 ## Example Repositories to Analyze

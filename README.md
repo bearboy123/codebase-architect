@@ -36,11 +36,12 @@ A **multi-agent AI platform** that analyzes codebases through specialized agents
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose (recommended)
-- OR: Python 3.10+, Node.js 18+, npm
+- **For Development**: Python 3.10+, Node.js 18+, npm
+- **For Production**: Kubernetes cluster (k3s, K3D, etc.) with `kubectl`
 - Azure OpenAI API credentials
 
-### With Local Development
+### 1. Local Development
+
 ```bash
 # Clone repository
 git clone https://github.com/bearboy123/codebase-architect-agent.git
@@ -53,29 +54,42 @@ cp .env.example .env
 # Backend
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn api.app:app --reload
+python main.py
 
 # Frontend (new terminal)
 cd frontend
 npm install
 npm run dev
 
-# Open http://localhost:3000
+# Open http://localhost:5173
 ```
 
-### With Kubernetes (Production)
+### 2. Kubernetes Deployment (k3s/K8s)
+
 ```bash
 # See k8s/README.md for complete deployment guide
 
-# Quick start:
-kubectl apply -f k8s/
-# Or with Kustomize:
+# Quick start with k3s:
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/pvc.yaml
+kubectl apply -f k8s/backend-deployment.yaml
+kubectl apply -f k8s/backend-service.yaml
+kubectl apply -f k8s/frontend-deployment.yaml
+kubectl apply -f k8s/frontend-service.yaml
+
+# Or use Kustomize (recommended):
 kubectl apply -k k8s/
+
+# Check deployment status:
+kubectl get pods -n codebase-architect
+kubectl logs -f deployment/codebase-architect-backend -n codebase-architect
 ```
 
-For detailed setup instructions, see [SETUP.md](SETUP.md).
+For detailed setup instructions, see [DEMO_SETUP.md](DEMO_SETUP.md).
 
 ---
 
@@ -182,7 +196,7 @@ curl http://localhost:8000/api/analysis/{job_id}
 - Vite (Build tool)
 
 **Infrastructure:**
-- Docker & Docker Compose
+- Kubernetes (k3s, K3D, AKS)
 - Azure Container Registry (production)
 
 ---
@@ -197,10 +211,6 @@ pytest
 # Frontend tests
 cd frontend
 npm test
-
-# Integration tests
-docker-compose up -d
-pytest tests/integration/
 ```
 
 ---
@@ -237,7 +247,7 @@ pytest tests/integration/
 **Analysis fails?**
 - Check repository accessibility
 - Verify Azure OpenAI credentials
-- Review backend logs: `docker logs codebase-architect-backend`
+- Review backend logs: `kubectl logs -f deployment/codebase-architect-backend -n codebase-architect`
 
 See [SETUP.md](SETUP.md#-troubleshooting) for more help.
 
@@ -267,14 +277,14 @@ This project demonstrates:
 - Semantic Kernel integration with Azure OpenAI
 - Full-stack TypeScript/Python development
 - Clean code and architecture practices
-- Production-ready Docker deployment
+- Production-ready Kubernetes deployment (k3s)
 
 ---
 
 ## 📞 Support
 
-- 📖 Check documentation: [SETUP.md](SETUP.md), [ARCHITECTURE.md](ARCHITECTURE.md)
-- 🐛 Review backend logs: `docker logs codebase-architect-backend`
+- 📖 Check documentation: [DEMO_SETUP.md](DEMO_SETUP.md), [ARCHITECTURE.md](ARCHITECTURE.md), [ERROR_HANDLING.md](ERROR_HANDLING.md)
+- 🐛 Review backend logs: `kubectl logs -f deployment/codebase-architect-backend -n codebase-architect`
 - 🔍 Check browser console for frontend errors (F12)
 - 💬 Open an issue for bugs or feature requests
 
