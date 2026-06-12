@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: codebase-architect-pvc
+  namespace: codebase-architect
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # For cloud providers (AKS, GKE, EKS), StorageClass is usually set automatically
+  # Uncomment below to specify a particular storage class
+  # storageClassName: fast-ssd

@@ -1,0 +1,54 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: codebase-architect
+
+# Common labels applied to all resources
+commonLabels:
+  app: codebase-architect
+  managed-by: kustomize
+
+# Common annotations applied to all resources
+commonAnnotations:
+  app.kubernetes.io/name: codebase-architect
+  app.kubernetes.io/version: "0.1.0"
+
+# List of resources to include
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - pvc.yaml
+  - rbac.yaml
+  - backend-deployment.yaml
+  - frontend-deployment.yaml
+  - backend-service.yaml
+  - frontend-service.yaml
+  - ingress.yaml
+  - hpa.yaml
+
+# Image replacement
+images:
+  - name: backend-image
+    newName: your-registry.azurecr.io/codebase-architect-backend
+    newTag: latest
+  - name: frontend-image
+    newName: your-registry.azurecr.io/codebase-architect-frontend
+    newTag: latest
+
+# Replica overrides for different environments
+replicas:
+  - name: codebase-architect-backend
+    count: 2
+  - name: codebase-architect-frontend
+    count: 2
+
+# Vars for templating
+vars:
+  - name: DOMAIN
+    objref:
+      kind: ConfigMap
+      name: codebase-architect-config
+      apiVersion: v1
+    fieldref:
+      fieldpath: data.FRONTEND_URL
