@@ -1,8 +1,8 @@
 /**
  * Custom hook for managing analysis jobs and polling
  */
-import { useState, useEffect, useCallback } from 'react';
-import { apiClient, AnalysisStatus } from '../services/apiClient';
+import { useState, useEffect } from 'react';
+import { apiClient } from '../services/apiClient';
 
 interface UseAnalysisJobResult {
   status: string;

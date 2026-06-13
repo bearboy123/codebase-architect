@@ -102,7 +102,7 @@ export function HealthScore({ score }: { score: number }) {
 /**
  * Summary statistics component
  */
-export function SummaryStat({ label, value, icon }: { label: string; value: string | number; icon?: string }) {
+export function SummaryStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="card p-4">
       <p className="text-sm text-gray-600">{label}</p>

@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import { useAnalysisJob } from '../hooks/useAnalysis';
-import { LoadingSpinner, ErrorMessage, ProgressBar } from '../components/Layout';
+import { ErrorMessage, ProgressBar } from '../components/Layout';
 import {
   HealthScore,
   SeveritySummary,
@@ -215,7 +215,7 @@ export function AnalysisDashboard({ jobId, onBack }: AnalysisDashboardProps) {
                   </div>
                 </div>
                 <FindingsList
-                  findings={findings.filter(f => f.severity !== 'critical' && f.severity !== 'high')}
+                  findings={findings.filter((f: any) => f.severity !== 'critical' && f.severity !== 'high')}
                   filter={severityFilter}
                 />
               </div>
