@@ -290,6 +290,6 @@ This project demonstrates:
 
 ---
 
-**Made with ❤️ using Semantic Kernel, Azure OpenAI, and TypeScript**
+**Made with Semantic Kernel, Azure OpenAI, and TypeScript**
 
 [⬆ Back to top](#-codebase-architect-agent)
