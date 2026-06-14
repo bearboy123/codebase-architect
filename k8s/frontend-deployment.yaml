@@ -34,8 +34,8 @@ spec:
       
       containers:
       - name: frontend
-        image: your-registry.azurecr.io/codebase-architect-frontend:latest
-        imagePullPolicy: IfNotPresent
+        image: codebase-architect-frontend:latest
+        imagePullPolicy: Never
         
         # Container ports
         ports:
@@ -46,7 +46,7 @@ spec:
         # Environment variables
         env:
         - name: VITE_API_URL
-          value: "https://api.codebase-architect.example.com"
+          value: "http://codebase-architect-backend:8000"
         
         # Resource limits and requests
         resources:
@@ -80,7 +80,7 @@ spec:
         # Security context for container
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: false
           capabilities:
             drop:
               - ALL

@@ -1,0 +1,16 @@
+venv/
+backend/venv/
+frontend/node_modules/
+frontend/dist/
+.git/
+.env
+*.json
+*.md
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.tar

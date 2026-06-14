@@ -40,7 +40,8 @@ cp ../.env.example .env
 # Edit .env with your credentials
 
 # Run the server
-uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
+cd ..
+uvicorn backend.api.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 #### Frontend Setup
@@ -131,7 +132,9 @@ cp ../.env.example .env
 # Edit .env with your credentials
 
 # Run the server
-uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
+cd ..
+PYTHONPATH=. ./backend/venv/bin/uvicorn backend.api.app:app --host 0.0.0.0 --port 8000 --reload
+
 ```
 
 #### Frontend Setup
@@ -298,7 +301,7 @@ The platform calculates an overall health score based on findings:
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_API_KEY=your-api-key-here
 AZURE_OPENAI_MODEL_DEPLOYMENT=gpt-4
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_API_VERSION=2025-01-01-preview
 
 # Server Configuration
 BACKEND_HOST=0.0.0.0

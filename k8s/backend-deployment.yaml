@@ -34,8 +34,8 @@ spec:
       
       containers:
       - name: backend
-        image: your-registry.azurecr.io/codebase-architect-backend:latest
-        imagePullPolicy: IfNotPresent
+        image: codebase-architect-backend:latest
+        imagePullPolicy: Never
         
         # Container ports
         ports:
@@ -99,8 +99,7 @@ spec:
       - name: temp
         emptyDir: {}
       - name: cache
-        persistentVolumeClaim:
-          claimName: codebase-architect-pvc
+        emptyDir: {}
       
       # Node affinity (optional)
       affinity:

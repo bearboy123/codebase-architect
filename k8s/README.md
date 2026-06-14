@@ -81,7 +81,7 @@ stringData:
   AZURE_OPENAI_ENDPOINT: "https://your-resource.openai.azure.com/"
   AZURE_OPENAI_API_KEY: "your-api-key"
   AZURE_OPENAI_MODEL_DEPLOYMENT: "your-model-deployment"
-  AZURE_OPENAI_API_VERSION: "2024-02-15-preview"
+  AZURE_OPENAI_API_VERSION: "2025-01-01-preview"
 ```
 
 ### 2. Deploy Using Kustomize (Recommended)

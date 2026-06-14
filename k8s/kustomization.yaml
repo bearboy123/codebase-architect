@@ -3,10 +3,12 @@ kind: Kustomization
 
 namespace: codebase-architect
 
-# Common labels applied to all resources
-commonLabels:
-  app: codebase-architect
-  managed-by: kustomize
+# Labels applied to resources (excluding selectors)
+labels:
+  - includeSelectors: false
+    pairs:
+      app: codebase-architect
+      managed-by: kustomize
 
 # Common annotations applied to all resources
 commonAnnotations:
@@ -29,26 +31,18 @@ resources:
 
 # Image replacement
 images:
-  - name: backend-image
-    newName: your-registry.azurecr.io/codebase-architect-backend
+  - name: your-registry.azurecr.io/codebase-architect-backend
+    newName: codebase-architect-backend
     newTag: latest
-  - name: frontend-image
-    newName: your-registry.azurecr.io/codebase-architect-frontend
+  - name: your-registry.azurecr.io/codebase-architect-frontend
+    newName: codebase-architect-frontend
     newTag: latest
 
 # Replica overrides for different environments
 replicas:
   - name: codebase-architect-backend
-    count: 2
+    count: 1
   - name: codebase-architect-frontend
-    count: 2
+    count: 1
 
-# Vars for templating
-vars:
-  - name: DOMAIN
-    objref:
-      kind: ConfigMap
-      name: codebase-architect-config
-      apiVersion: v1
-    fieldref:
-      fieldpath: data.FRONTEND_URL
+

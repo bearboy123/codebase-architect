@@ -7,21 +7,17 @@ metadata:
     # For Azure Application Gateway
     appgw.ingress.kubernetes.io/backend-protocol: "http"
     
-    # For NGINX Ingress Controller
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-    
     # SSL/TLS
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    kubernetes.io/ingress.class: "nginx"
+    kubernetes.io/ingress.class: "traefik"
 spec:
   tls:
   - hosts:
-    - codebase-architect.example.com
-    - api.codebase-architect.example.com
+    - codebase-architect.local
+    - api.codebase-architect.local
     secretName: codebase-architect-tls
   rules:
-  - host: codebase-architect.example.com
+  - host: codebase-architect.local
     http:
       paths:
       - path: /
@@ -31,7 +27,7 @@ spec:
             name: codebase-architect-frontend
             port:
               number: 3000
-  - host: api.codebase-architect.example.com
+  - host: api.codebase-architect.local
     http:
       paths:
       - path: /
@@ -41,3 +37,4 @@ spec:
             name: codebase-architect-backend
             port:
               number: 8000
+

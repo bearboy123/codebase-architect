@@ -19,6 +19,7 @@ backend/**/__pycache__/
 *.so
 .Python
 venv/
+/venv/
 env/
 ENV/
 build/
@@ -62,3 +63,11 @@ Thumbs.db
 htmlcov/
 .coverage
 analysis_results/
+
+# Docker image tarballs (large build artifacts - do not commit)
+*.tar
+
+# Azurite local Azure Queue Storage emulator files
+__azurite_db_queue__.json
+__azurite_db_queue_extent__.json
+__queuestorage__/

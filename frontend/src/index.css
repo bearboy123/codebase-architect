@@ -58,18 +58,18 @@ body {
   }
 
   .badge-critical {
-    @apply badge bg-red-200 text-red-800;
+    @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-red-200 text-red-800;
   }
 
   .badge-high {
-    @apply badge bg-orange-200 text-orange-800;
+    @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-orange-200 text-orange-800;
   }
 
   .badge-medium {
-    @apply badge bg-yellow-200 text-yellow-800;
+    @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-yellow-200 text-yellow-800;
   }
 
   .badge-low {
-    @apply badge bg-blue-200 text-blue-800;
+    @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-blue-200 text-blue-800;
   }
 }

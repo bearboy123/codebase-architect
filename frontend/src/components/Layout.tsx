@@ -26,7 +26,7 @@ export function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-400 text-sm py-8 mt-12">
       <div className="max-w-7xl mx-auto px-6">
-        <p>&copy; 2024 Codebase Architect Agent. Powered by Semantic Kernel and Azure OpenAI.</p>
+        <p>&copy; 2026 Codebase Architect Agent. Powered by Semantic Kernel and Azure OpenAI.</p>
       </div>
     </footer>
   );
