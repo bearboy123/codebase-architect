@@ -5,7 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/typescript-5.3+-blue.svg)
 ![React 18](https://img.shields.io/badge/react-18.2+-61dafb.svg)
 
-A **multi-agent AI platform** that analyzes codebases through specialized agents. Instead of relying on a single AI assistant, this system orchestrates a team of autonomous agents that collaborate to analyze code from multiple perspectives and produce actionable insights.
+A **multi-agent AI platform** that analyzes codebases through specialized agents. Instead of relying on a single AI assistant, this system orchestrates a team of autonomous agents that collaborate to analyze code from multiple perspectives and produce actionable insights. This was developed as a part of Microsoft Agents League Hackathon 2026 #AgentsLeague .
 
 **Transform weeks of manual code review into minutes of AI-powered analysis.**
 
